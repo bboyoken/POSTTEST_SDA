@@ -8,8 +8,7 @@
 
 using namespace std;
 
-const int MAX_KERETA = 50;
-const int MAX_TRANSAKSI = 50;
+const int MAX_KERETA = 50; 
 
 struct Kereta {
     string nomorKereta;
@@ -25,22 +24,16 @@ struct Kereta {
 struct TransaksiTiket {
     string namaPenumpang;
     Kereta keretaPilihan;
-};
-
-struct NodeTransaksi {
-    TransaksiTiket data;
-    NodeTransaksi* next;
+    TransaksiTiket* next;
 };
 
 Kereta daftarKereta[MAX_KERETA];
 int    jumlahKereta = 0;
 
-NodeTransaksi* qFront = nullptr;
-NodeTransaksi* qRearNode = nullptr;
-int jumlahAntrian = 0;
+TransaksiTiket* qFront = nullptr;
+TransaksiTiket* qRear  = nullptr;
 
-NodeTransaksi* sTopNode = nullptr;
-int jumlahRiwayat = 0;
+TransaksiTiket* sTop   = nullptr;
 
 bool validasiWaktu(string waktu) {
     if (waktu.length() != 5) return false;
@@ -508,11 +501,6 @@ void selectionSort(Kereta* arr, int n) {
 
 void tambahAntrian() {
     judulBox("     ENQUEUE: TAMBAH ANTRIAN TIKET");
-    
-    if (jumlahAntrian >= MAX_TRANSAKSI) {
-        cout << "  [!] Error: Queue Overflow! Antrian pemesanan sudah penuh.\n";
-        return;
-    }
 
     cout << "\n  Daftar Jadwal Kereta Saat Ini:\n";
     tampilkanSemua(&daftarKereta[0], jumlahKereta);
@@ -551,21 +539,17 @@ void tambahAntrian() {
         return;
     }
 
-    TransaksiTiket tiketBaru;
-    tiketBaru.namaPenumpang = nama;
-    tiketBaru.keretaPilihan = keretaDicari;
-
-    NodeTransaksi* newNode = new NodeTransaksi;
-    newNode->data = tiketBaru;
-    newNode->next = nullptr;
+    TransaksiTiket* tiketBaru = new TransaksiTiket;
+    tiketBaru->namaPenumpang = nama;
+    tiketBaru->keretaPilihan = keretaDicari;
+    tiketBaru->next = nullptr;
 
     if (qFront == nullptr) {
-        qFront = qRearNode = newNode;
+        qFront = qRear = tiketBaru;
     } else {
-        qRearNode->next = newNode;
-        qRearNode = newNode;
+        qRear->next = tiketBaru;
+        qRear = tiketBaru;
     }
-    jumlahAntrian++;
 
     cout << "\n  [+] Penumpang '" << nama << "' berhasil masuk antrian beli tiket " << noKA << "!\n";
 }
@@ -574,101 +558,90 @@ void prosesTiketAntrian() {
     judulBox("     DEQUEUE: PROSES ANTRIAN TIKET");
     
     if (qFront == nullptr) {
-        cout << "  [!] Error: Saat ini antrian kosong.\n";
-        return;
-    }
-    if (jumlahRiwayat >= MAX_TRANSAKSI) {
-        cout << "  [!] Error: Riwayat transaksi kepenuhan.\n";
+        cout << "  [!] UNDERFLOW: Saat ini antrian kosong. Tidak ada yang diproses.\n";
         return;
     }
 
-    NodeTransaksi* tempQ = qFront;
-    TransaksiTiket diproses = tempQ->data;
-    
+    TransaksiTiket* diproses = qFront;
     qFront = qFront->next;
+    
     if (qFront == nullptr) {
-        qRearNode = nullptr;
+        qRear = nullptr;
     }
-    delete tempQ;
-    jumlahAntrian--;
 
-    NodeTransaksi* newNodeS = new NodeTransaksi;
-    newNodeS->data = diproses;
-    newNodeS->next = sTopNode;
-    sTopNode = newNodeS;
-    jumlahRiwayat++;
+    diproses->next = sTop;
+    sTop = diproses;
 
     cout << "  [+] Transaksi Pemesanan Tiket Berhasil Diproses!\n";
-    cout << "      Nama Penumpang : " << diproses.namaPenumpang << "\n";
-    cout << "      Rute Kereta    : " << diproses.keretaPilihan.asal << " --> " << diproses.keretaPilihan.tujuan << "\n";
+    cout << "      Nama Penumpang : " << diproses->namaPenumpang << "\n";
+    cout << "      Rute Kereta    : " << diproses->keretaPilihan.asal << " --> " << diproses->keretaPilihan.tujuan << "\n";
 }
 
 void batalkanTransaksiTerakhir() {
-    judulBox("       BATALKAN TRANSAKSI TERAKHIR");
+    judulBox("       POP: BATALKAN TRANSAKSI TERAKHIR");
     
-    if (sTopNode == nullptr) {
-        cout << "  [!] Riwayat transaksi kosong.\n";
+    if (sTop == nullptr) {
+        cout << "  [!] UNDERFLOW: Riwayat transaksi kosong.\n";
         return;
     }
 
-    NodeTransaksi* tempS = sTopNode;
-    TransaksiTiket dibatalkan = tempS->data;
-    
-    sTopNode = sTopNode->next;
-    delete tempS;
-    jumlahRiwayat--;
+    TransaksiTiket* dibatalkan = sTop; 
+    sTop = sTop->next;
 
     cout << "  [-] Transaksi Terakhir Berhasil Dibatalkan/Dihapus!\n";
-    cout << "      Nama Penumpang : " << dibatalkan.namaPenumpang << "\n";
-    cout << "      Rute Dibatalkan: " << dibatalkan.keretaPilihan.asal << " --> " << dibatalkan.keretaPilihan.tujuan << "\n";
+    cout << "      Nama Penumpang : " << dibatalkan->namaPenumpang << "\n";
+    cout << "      Rute Dibatalkan: " << dibatalkan->keretaPilihan.asal << " --> " << dibatalkan->keretaPilihan.tujuan << "\n";
+    
+    delete dibatalkan;
 }
 
-void tampilkanDataQueue(NodeTransaksi* front) {
+void tampilkanDataQueue(TransaksiTiket* front) {
     if (front == nullptr) {
         cout << "  (Antrian Kosong)\n";
     } else {
         int i = 1;
-        NodeTransaksi* curr = front;
+        TransaksiTiket* curr = front;
         while (curr != nullptr) {
-            cout << "   " << i << ". " << curr->data.namaPenumpang 
-                 << " - KA " << curr->data.keretaPilihan.nomorKereta 
-                 << " (" << curr->data.keretaPilihan.asal << "->" << curr->data.keretaPilihan.tujuan << ")\n";
+            cout << "   " << i << ". " << curr->namaPenumpang 
+                 << " - KA " << curr->keretaPilihan.nomorKereta 
+                 << " (" << curr->keretaPilihan.asal << "->" << curr->keretaPilihan.tujuan << ")\n";
             curr = curr->next;
             i++;
         }
     }
 }
 
-void tampilkanDataStack(NodeTransaksi* top) {
+void tampilkanDataStack(TransaksiTiket* top) {
     if (top == nullptr) {
         cout << "  (Riwayat Kosong)\n";
     } else {
-        int i = jumlahRiwayat;
-        NodeTransaksi* curr = top;
+        int i = 1;
+        TransaksiTiket* curr = top;
         while (curr != nullptr) {
-            cout << "   " << i << ". " << curr->data.namaPenumpang 
-                 << " - KA " << curr->data.keretaPilihan.nomorKereta 
-                 << " (" << curr->data.keretaPilihan.asal << "->" << curr->data.keretaPilihan.tujuan << ")\n";
+            cout << "   " << i << ". " << curr->namaPenumpang 
+                 << " - KA " << curr->keretaPilihan.nomorKereta 
+                 << " (" << curr->keretaPilihan.asal << "->" << curr->keretaPilihan.tujuan << ")\n";
             curr = curr->next;
-            i--;
+            i++;
         }
     }
 }
 
 void tampilkanStackDanQueue() {
-    judulBox("   TAMPILAN ANTRIAN DAN RIWAYAT (PEEK)");
+    judulBox("   PEEK: TAMPILAN ANTRIAN DAN RIWAYAT");
 
     cout << "\n  [ PEEK DATA TERDEPAN / TERBARU ]\n";
+    
     if (qFront != nullptr) {
-        cout << "  Antrian Terdepan  : " << qFront->data.namaPenumpang << " (KA " << qFront->data.keretaPilihan.nomorKereta << ")\n";
+        cout << "  Antrian Terdepan  : " << qFront->namaPenumpang << " (KA " << qFront->keretaPilihan.nomorKereta << ")\n";
     } else {
-        cout << "  Antrian Terdepan  : (Kosong)\n";
+        cout << "  [!] UNDERFLOW: Antrian kosong.\n";
     }
 
-    if (sTopNode != nullptr) {
-        cout << "  Transaksi Terbaru : " << sTopNode->data.namaPenumpang << " (KA " << sTopNode->data.keretaPilihan.nomorKereta << ")\n";
+    if (sTop != nullptr) {
+        cout << "  Transaksi Terbaru : " << sTop->namaPenumpang << " (KA " << sTop->keretaPilihan.nomorKereta << ")\n";
     } else {
-        cout << "  Transaksi Terbaru : (Kosong)\n";
+        cout << "  [!] UNDERFLOW: Riwayat kosong.\n";
     }
     
     garis('-');
@@ -677,7 +650,7 @@ void tampilkanStackDanQueue() {
     
     garis('-');
     cout << "  [ SELURUH RIWAYAT TRANSAKSI ]\n";
-    tampilkanDataStack(sTopNode);
+    tampilkanDataStack(sTop);
 }
 
 
