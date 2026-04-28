@@ -53,12 +53,6 @@ int main() {
 
     cout << "Daftar Stok Sembako:" << endl;
     tampilkanStokSembako(head); 
-    /* Harusnya output:
-       - Beras: 50
-       - Minyak Goreng: 30
-       - Gula Pasir: 20
-       - Tepung Terigu: 15
-    */
-    
+
     return 0;
 }
